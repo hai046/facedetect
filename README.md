@@ -1,4 +1,4 @@
-# facedetect
+# 初次研究openCV人脸识别
 
 ###所在环境
 
@@ -8,7 +8,7 @@ Xcode
 
 
 
-###,install
+###install
 
 ```
 sudo port install opencv
