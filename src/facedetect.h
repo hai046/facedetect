@@ -34,11 +34,11 @@ int makeFacedetect(string cascadeName, string path, string saveFilePath);
  */
 string detectAndDraw(bool showImage, string name, Mat& img,
 		CascadeClassifier& cascade, CascadeClassifier& nestedCascade,
-		double scale, bool tryflip);
+		double scale, bool tryflip, string model_path = "");
 vector<string> scanFile(string path);
 
 /**
  * 显示识别
  */
-int readFacedetect(string cascadeName, string inputName);
+int readFacedetect(string cascadeName, string inputName, string model_path);
 

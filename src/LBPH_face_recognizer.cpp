@@ -1,12 +1,5 @@
-#include "opencv2/core.hpp"
-#include "opencv2/face.hpp"
-#include "opencv2/highgui.hpp"
-#include <iostream>
-#include <fstream>
-#include <sstream>
-using namespace cv;
-using namespace cv::face;
-using namespace std;
+#include "LBPH_face_recognizer.h"
+
 static void read_csv(const string& filename, vector<Mat>& images,
 		vector<int>& labels, char separator = ';') {
 	std::ifstream file(filename.c_str(), ifstream::in);
@@ -21,7 +14,7 @@ static void read_csv(const string& filename, vector<Mat>& images,
 		getline(liness, path, separator);
 		getline(liness, classlabel);
 		if (!path.empty() && !classlabel.empty()) {
-			images.push_back(imread(path, 0));
+			images.push_back(imread(path, CV_LOAD_IMAGE_GRAYSCALE));
 			labels.push_back(atoi(classlabel.c_str()));
 		}
 	}
@@ -29,25 +22,31 @@ static void read_csv(const string& filename, vector<Mat>& images,
 
 bool train(string fn_csv, string output_file);
 
-int main(int argc, const char *argv[]) {
-	// Check for valid command line arguments, print usage
-	// if no arguments were given.
-//	if (argc != 3) {
-//		cout << "usage: " << argv[0] << " <csv file> <output name>" << endl;
-//		exit(1);
-//	}
-	// Get the path to your CSV.
-	string fn_csv = "/data/opencv/waiopencv/csv.csv";	//string(argv[1]);
-
-	// Get the output file name and path
-	string output_file = "/data/opencv/waiopencv/result.txt";// string(argv[2]);
-	train(fn_csv, output_file);
-
-
-
-
-
-}
+int recognize_user(string model_data_path, string imag_path);
+//
+//int main(int argc, const char *argv[]) {
+//	// Check for valid command line arguments, print usage
+//	// if no arguments were given.
+////	if (argc != 3) {
+////		cout << "usage: " << argv[0] << " <csv file> <output name>" << endl;
+////		exit(1);
+////	}
+////	// Get the path to your CSV.
+//	string fn_csv = "/data/opencv/waiopencv/csv.csv";	//string(argv[1]);
+////
+////	// Get the output file name and path
+//	string output_file = "/data/opencv/waiopencv/result.txt";// string(argv[2]);
+//	train(fn_csv, output_file);
+//
+//	cout << endl;
+//	cout << endl;
+//
+//	int user =
+//			recognize_user(output_file,
+//					"/Users/haizhu/Downloads/data/opencv/waiopencv/zhaosihan/XveZkfH4ldID8s41TXBPxw.jpeg@200w_200h_75q.jpeg");
+//	cout << "user:" << user << endl;
+//
+//}
 
 bool train(string fn_csv, string output_file) {
 	// These vectors hold the images and corresponding labels.
@@ -102,19 +101,14 @@ bool train(string fn_csv, string output_file) {
 	//
 	Ptr<LBPHFaceRecognizer> model = createLBPHFaceRecognizer();
 	model->train(images, labels);
+//	model->setLabelInfo(labels[0], "肇始于");
+
 	model->save(output_file);
 	// The following line predicts the label of a given
 	// test image:
 	int predicted = -1;
 	double confidence = 0.0;
 	model->predict(testSample, predicted, confidence);
-	//
-	// To get the confidence of a prediction call the model with:
-	//
-	//      int predictedLabel = -1;
-	//      double confidence = 0.0;
-	//      model->predict(testSample, predictedLabel, confidence);
-	//
 	string result_message = format("Predicted = %d / confidence = %f.",
 			predicted, confidence);
 	cout << result_message << endl; // First we'll use it to set the threshold of the LBPHFaceRecognizer // to 0.0 without retraining the model. This can be useful if // you are evaluating the model: // model->setThreshold(0.0);
@@ -135,10 +129,37 @@ bool train(string fn_csv, string output_file) {
 					model->getGridX(), model->getGridY(),
 					model->getThreshold());
 	cout << model_info << endl;
-	// We could get the histograms for example:
 	vector<Mat> histograms = model->getHistograms();
-	// But should I really visualize it? Probably the length is interesting:
 	cout << "Size of the histograms: " << histograms[0].total() << endl;
 	return true;
+}
+
+int recognize_user(string model_data_path, string imag_path) {
+	Ptr<LBPHFaceRecognizer> model = createLBPHFaceRecognizer();
+	model->load(model_data_path);
+
+	cv::Mat img = imread(imag_path, CV_LOAD_IMAGE_GRAYSCALE);
+
+	cout << "img: " << imag_path << endl;
+
+	return recognize_user(model, img);
+}
+
+int recognize_user(Ptr<LBPHFaceRecognizer> model, cv::Mat img) {
+//	Ptr<LBPHFaceRecognizer> model = createLBPHFaceRecognizer();
+//	model->load(model_data_path);
+
+//	cv::Mat img = imread(imag_path, CV_LOAD_IMAGE_GRAYSCALE);
+
+//	cout << "img: " << imag_path << endl;
+	int predictedLabel = -1;
+
+	double predicted_confidence = 0.0;
+	// Get the prediction and associated confidence from the model
+	model->predict(img, predictedLabel, predicted_confidence);
+
+	cout << "predictedLabel:" << predictedLabel << endl;
+//	cout << model->getLabelInfo(predictedLabel) << endl;
+	return predictedLabel;
 }
 
