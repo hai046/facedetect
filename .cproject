@@ -25,6 +25,8 @@
 									<listOptionValue builtIn="false" value="opencv_shape"/>
 									<listOptionValue builtIn="false" value="opencv_videoio"/>
 									<listOptionValue builtIn="false" value="opencv_video"/>
+									<listOptionValue builtIn="false" value="opencv_face"/>
+									<listOptionValue builtIn="false" value="opencv_surface_matching"/>
 									<listOptionValue builtIn="false" value="opencv_stitching"/>
 									<listOptionValue builtIn="false" value="opencv_objdetect"/>
 									<listOptionValue builtIn="false" value="opencv_superres"/>

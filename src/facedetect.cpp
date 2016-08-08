@@ -9,7 +9,7 @@ int makeFacedetect(string cascadeName, string path, string saveFilePath) {
 //	path = "/data/opencv/waiopencv/images/";
 //	saveFilePath = "/data/opencv/waiopencv/info.txt";
 
-	bool tryflip = false;
+	bool tryflip = true;
 	double scale = 1;
 
 	vector<string> files = scanFile(path);
