@@ -1,7 +1,35 @@
 #include "LBPH_face_recognizer.h"
+//#include "lbp.h"
+
+template<typename _Tp> static
+void olbp_(InputArray _src, OutputArray _dst) {
+	// get matrices
+	Mat src = _src.getMat();
+	// allocate memory for result
+	_dst.create(src.rows - 2, src.cols - 2, CV_8UC1);
+	Mat dst = _dst.getMat();
+	// zero the result matrix
+	dst.setTo(0);
+	// calculate patterns
+	for (int i = 1; i < src.rows - 1; i++) {
+		for (int j = 1; j < src.cols - 1; j++) {
+			_Tp center = src.at<_Tp>(i, j);
+			unsigned char code = 0;
+			code |= (src.at<_Tp>(i - 1, j - 1) >= center) << 7;
+			code |= (src.at<_Tp>(i - 1, j) >= center) << 6;
+			code |= (src.at<_Tp>(i - 1, j + 1) >= center) << 5;
+			code |= (src.at<_Tp>(i, j + 1) >= center) << 4;
+			code |= (src.at<_Tp>(i + 1, j + 1) >= center) << 3;
+			code |= (src.at<_Tp>(i + 1, j) >= center) << 2;
+			code |= (src.at<_Tp>(i + 1, j - 1) >= center) << 1;
+			code |= (src.at<_Tp>(i, j - 1) >= center) << 0;
+			dst.at<unsigned char>(i - 1, j - 1) = code;
+		}
+	}
+}
 
 static void read_csv(const string& filename, vector<Mat>& images,
-		vector<int>& labels, char separator = ';') {
+		vector<int>& labels, char separator = ',') {
 	std::ifstream file(filename.c_str(), ifstream::in);
 	if (!file) {
 		string error_message =
@@ -14,7 +42,20 @@ static void read_csv(const string& filename, vector<Mat>& images,
 		getline(liness, path, separator);
 		getline(liness, classlabel);
 		if (!path.empty() && !classlabel.empty()) {
-			images.push_back(imread(path, CV_LOAD_IMAGE_GRAYSCALE));
+//				IplImage* Gray_face = cvCreateImage(cvSize(face->width, face->height),
+//						face->depth, 1); //先分配图像空间
+//				cvCvtColor(face, Gray_face, CV_BGR2GRAY); //把载入图像转换为灰度图
+//				IplImage* lbp_face = cvCreateImage(cvGetSize(Gray_face), IPL_DEPTH_8U, 1); //先分配图像空间
+			Mat face = imread(path,
+					CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+			//在这里直接转换成LBP
+			Mat lbp_face = Mat::zeros(face.size(), face.type());
+			olbp_<uchar>(face, lbp_face);
+			images.push_back(lbp_face);
+			stringstream st;
+			st << path << "lbp_face.jpg";
+			cout << st.str() << endl;
+			imwrite(st.str(), lbp_face);
 			labels.push_back(atoi(classlabel.c_str()));
 		}
 	}
@@ -73,10 +114,10 @@ bool train(string fn_csv, string output_file) {
 	// done, so that the training data (which we learn the
 	// cv::LBPHFaceRecognizer on) and the test data we test
 	// the model with, do not overlap.
-	Mat testSample = images[images.size() - 1];
-	int testLabel = labels[labels.size() - 1];
-	images.pop_back();
-	labels.pop_back();
+//	Mat testSample = images[images.size() - 1];
+//	int testLabel = labels[labels.size() - 1];
+//	images.pop_back();
+//	labels.pop_back();
 	// The following lines create an LBPH model for
 	// face recognition and train it with the images and
 	// labels read from the given CSV file.
@@ -100,6 +141,7 @@ bool train(string fn_csv, string output_file) {
 	//      cv::createLBPHFaceRecognizer(1,8,8,8,123.0)
 	//
 	Ptr<LBPHFaceRecognizer> model = createLBPHFaceRecognizer();
+	model->setThreshold(0);
 	model->train(images, labels);
 //	model->setLabelInfo(labels[0], "肇始于");
 
@@ -108,15 +150,15 @@ bool train(string fn_csv, string output_file) {
 	// test image:
 	int predicted = -1;
 	double confidence = 0.0;
-	model->predict(testSample, predicted, confidence);
+//	model->predict(testSample, predicted, confidence);
 	string result_message = format("Predicted = %d / confidence = %f.",
 			predicted, confidence);
 	cout << result_message << endl; // First we'll use it to set the threshold of the LBPHFaceRecognizer // to 0.0 without retraining the model. This can be useful if // you are evaluating the model: // model->setThreshold(0.0);
 	// Now the threshold of this model is set to 0.0. A prediction
 	// now returns -1, as it's impossible to have a distance below
 	// it
-	predicted = model->predict(testSample);
-	cout << "Predicted class = " << predicted << endl;
+//	predicted = model->predict(testSample);
+//	cout << "Predicted class = " << predicted << endl;
 	// Show some informations about the model, as there's no cool
 	// Model data to display as in Eigenfaces/Fisherfaces.
 	// Due to efficiency reasons the LBP images are not stored

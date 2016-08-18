@@ -5,6 +5,33 @@
 //string nestedCascadeName =
 //		"/Users/haizhu/Documents/opencv-2.4.13/data/haarcascades/haarcascade_eye_tree_eyeglasses.xml";
 //
+
+template<typename _Tp> static
+void olbp_(InputArray _src, OutputArray _dst) {
+	// get matrices
+	Mat src = _src.getMat();
+	// allocate memory for result
+	_dst.create(src.rows - 2, src.cols - 2, CV_8UC1);
+	Mat dst = _dst.getMat();
+	// zero the result matrix
+	dst.setTo(0);
+	// calculate patterns
+	for (int i = 1; i < src.rows - 1; i++) {
+		for (int j = 1; j < src.cols - 1; j++) {
+			_Tp center = src.at<_Tp>(i, j);
+			unsigned char code = 0;
+			code |= (src.at<_Tp>(i - 1, j - 1) >= center) << 7;
+			code |= (src.at<_Tp>(i - 1, j) >= center) << 6;
+			code |= (src.at<_Tp>(i - 1, j + 1) >= center) << 5;
+			code |= (src.at<_Tp>(i, j + 1) >= center) << 4;
+			code |= (src.at<_Tp>(i + 1, j + 1) >= center) << 3;
+			code |= (src.at<_Tp>(i + 1, j) >= center) << 2;
+			code |= (src.at<_Tp>(i + 1, j - 1) >= center) << 1;
+			code |= (src.at<_Tp>(i, j - 1) >= center) << 0;
+			dst.at<unsigned char>(i - 1, j - 1) = code;
+		}
+	}
+}
 int makeFacedetect(string cascadeName, string path, string saveFilePath) {
 //	path = "/data/opencv/waiopencv/images/";
 //	saveFilePath = "/data/opencv/waiopencv/info.txt";
@@ -47,7 +74,7 @@ int makeFacedetect(string cascadeName, string path, string saveFilePath) {
 //				inputName.substr(inputName.find_last_of("/") + 1,
 //				inputName.length());
 
-		string result = detectAndDraw(showImage, name, image, cascade,
+		string result = detectFaceAndDraw(showImage, name, image, cascade,
 				nestedCascade, scale, tryflip);
 
 		if (result.length() > 0) {
@@ -92,7 +119,7 @@ vector<string> scanFile(string dirPath) {
 
 }
 
-string detectAndDraw(bool showImage, string name, Mat& img,
+string detectFaceAndDraw(bool showImage, string name, Mat& img,
 		CascadeClassifier& cascade, CascadeClassifier& nestedCascade,
 		double scale, bool tryflip, string model_path) {
 	stringstream result_stream;
@@ -139,6 +166,8 @@ string detectAndDraw(bool showImage, string name, Mat& img,
 	cout << " model_path=" << model_path << endl;
 	model = createLBPHFaceRecognizer();
 	model->load(model_path);
+	cout << "  Threshold=" << model->getThreshold() << endl;
+//	model->setThreshold(0.0);
 
 	for (vector<Rect>::const_iterator r = faces.begin(); r != faces.end();
 			r++, i++) {
@@ -169,14 +198,24 @@ string detectAndDraw(bool showImage, string name, Mat& img,
 						cvRound((r->y + r->height - 1) * scale)), color, 3, 8,
 				0);
 
-		int user = recognize_user(model, smallImg(*r));
-
 		{
+			Mat face = smallImg(*r);
+//			//在这里直接转换成LBP
+			Mat lbp_face = Mat::zeros(face.size(), face.type());
+			olbp_<uchar>(face, lbp_face);
+			int user = recognize_user(model, lbp_face);
 			stringstream textstream;
+
+//			imwrite(
+//					"/Users/haizhu/Downloads/data/opencv/waiopencv/crop_face.jpg",
+//					face);
+//			imwrite(
+//					"/Users/haizhu/Downloads/data/opencv/waiopencv/crop_lbp_face.jpg",
+//					lbp_face);
 
 			center.x = cvRound((r->x + r->width * 0.5) * scale);
 			center.y = cvRound((r->y + r->height * 0.5) * scale);
-			textstream << "user:" << user;
+			textstream << "" << user;
 			putText(img, textstream.str(), center, 1, 1, color);
 		}
 
@@ -234,7 +273,7 @@ int readFacedetect(string cascadeName, string inputName, string model_path) {
 	}
 	cout << "In image read:" << endl;
 
-	string result = detectAndDraw(showImage, inputName, image, cascade,
+	string result = detectFaceAndDraw(showImage, inputName, image, cascade,
 			nestedCascade, scale, tryflip, model_path);
 
 	cout << "result:" << result << endl;
@@ -247,3 +286,4 @@ int readFacedetect(string cascadeName, string inputName, string model_path) {
 
 	return 0;
 }
+

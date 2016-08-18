@@ -32,7 +32,7 @@ int makeFacedetect(string cascadeName, string path, string saveFilePath);
 /**
  * 检查人脸，如果showImage 则可以显示出来
  */
-string detectAndDraw(bool showImage, string name, Mat& img,
+string detectFaceAndDraw(bool showImage, string name, Mat& img,
 		CascadeClassifier& cascade, CascadeClassifier& nestedCascade,
 		double scale, bool tryflip, string model_path = "");
 vector<string> scanFile(string path);
